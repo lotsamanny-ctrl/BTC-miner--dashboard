@@ -29,15 +29,13 @@
     
     .wallet-section { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     input[type="text"] { background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: #fff; padding: 12px 16px; border-radius: 8px; flex-grow: 1; font-size: 0.95rem; }
-    button { background: var(--accent); color: #000; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-    button:hover { background: var(--accent-hover); }
+    button, .btn-link { background: var(--accent); color: #000; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.2s; }
+    button:hover, .btn-link:hover { background: var(--accent-hover); }
 
-    .pool-tabs { display: flex; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-    .tab-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; }
-    .tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: bold; }
-    
-    .iframe-container { width: 100%; height: 550px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); background: #000; }
-    iframe { width: 100%; height: 100%; border: none; }
+    .pool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-top: 15px; }
+    .pool-card { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; }
+    .pool-name { font-size: 1.1rem; font-weight: bold; color: var(--accent); }
+    .pool-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -69,52 +67,59 @@
       </div>
     </div>
 
-    <!-- Wallet Address Lookup -->
+    <!-- Wallet Address Lookup & Launchpad -->
     <div class="card">
-      <div class="card-title">Worker Address Tracker</div>
+      <div class="card-title">Solo Mining Pool Launchpad</div>
       <div class="wallet-section">
         <input type="text" id="wallet-input" placeholder="Enter Bitcoin Payout Address (e.g. 3NnsZr...)" />
-        <button onclick="updateDashboard()">Update Stats View</button>
+        <button onclick="saveAddress()">Save & Update Links</button>
       </div>
 
-      <!-- Multi-Pool View Switcher -->
-      <div class="pool-tabs">
-        <button class="tab-btn active" onclick="switchPool('nmminer')">NMMiner SoloBTC</button>
-        <button class="tab-btn" onclick="switchPool('nerdminer')">NerdMiner Pool</button>
-        <button class="tab-btn" onclick="switchPool('publicpool')">Public-Pool.io</button>
-      </div>
+      <div class="pool-grid">
+        <!-- NMMiner -->
+        <div class="pool-card">
+          <div>
+            <div class="pool-name">NMMiner SoloBTC</div>
+            <p class="pool-desc">Official NMMiner solo pool dashboard. Supported by ESP32 devices.</p>
+          </div>
+          <a id="link-nmminer" href="https://solobtc.nmminer.com/" target="_blank" class="btn-link">Open NMMiner Stats ↗</a>
+        </div>
 
-      <div class="iframe-container">
-        <iframe id="pool-frame" src="https://solobtc.nmminer.com/"></iframe>
+        <!-- NerdMiner Pool -->
+        <div class="pool-card">
+          <div>
+            <div class="pool-name">NerdMiner Pool</div>
+            <p class="pool-desc">Dedicated solo lottery pool optimized for low-hashrate micro devices.</p>
+          </div>
+          <a id="link-nerdminer" href="https://pool.nerdminer.io/" target="_blank" class="btn-link">Open NerdMiner Stats ↗</a>
+        </div>
+
+        <!-- Public Pool -->
+        <div class="pool-card">
+          <div>
+            <div class="pool-name">Public-Pool.io</div>
+            <p class="pool-desc">Open-source solo Bitcoin pool with real-time stratum analytics.</p>
+          </div>
+          <a id="link-publicpool" href="https://public-pool.io/" target="_blank" class="btn-link">Open Public-Pool Stats ↗</a>
+        </div>
       </div>
     </div>
   </div>
 
   <script>
-    let currentPool = 'nmminer';
-
-    function getWallet() {
-      return document.getElementById('wallet-input').value.trim();
-    }
-
-    function switchPool(pool) {
-      currentPool = pool;
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-      updateDashboard();
-    }
-
-    function updateDashboard() {
-      const address = getWallet();
-      const frame = document.getElementById('pool-frame');
-      
-      if (currentPool === 'nmminer') {
-        frame.src = address ? `https://solobtc.nmminer.com/#/app/${address}` : `https://solobtc.nmminer.com/`;
-      } else if (currentPool === 'nerdminer') {
-        frame.src = `https://pool.nerdminer.io/`;
-      } else if (currentPool === 'publicpool') {
-        frame.src = address ? `https://public-pool.io/#/app/${address}` : `https://public-pool.io/`;
+    function saveAddress() {
+      const addr = document.getElementById('wallet-input').value.trim();
+      if(addr) {
+        localStorage.setItem('btc_worker_address', addr);
+        updateLinks(addr);
       }
+    }
+
+    function updateLinks(addr) {
+      if(!addr) return;
+      document.getElementById('link-nmminer').href = `https://solobtc.nmminer.com/#/app/${addr}`;
+      document.getElementById('link-nerdminer').href = `https://pool.nerdminer.io/`;
+      document.getElementById('link-publicpool').href = `https://public-pool.io/#/app/${addr}`;
     }
 
     async function fetchNetworkStats() {
@@ -129,6 +134,13 @@
         document.getElementById('btc-height').innerText = '---';
         document.getElementById('btc-diff').innerText = '---';
       }
+    }
+
+    // Load saved address from local storage
+    const savedAddr = localStorage.getItem('btc_worker_address');
+    if(savedAddr) {
+      document.getElementById('wallet-input').value = savedAddr;
+      updateLinks(savedAddr);
     }
 
     fetchNetworkStats();
